@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+podman run --rm -it \
+	--pod "$(basename "$(pwd)")" \
+	-w /code \
+	-v "$(pwd)":/code \
+	php-tools:"${PHP_VERSION:-8.2}" "$@"

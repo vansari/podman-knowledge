@@ -1,0 +1,21 @@
+ARG PHP_VERSION="8.1"
+FROM php:${PHP_VERSION}-cli-alpine as tools
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN apk update && apk upgrade && apk add libpq-dev
+RUN docker-php-ext-install pgsql pdo pdo_pgsql && docker-php-ext-enable pdo_pgsql
+USER appuser
+
+FROM php:${PHP_VERSION}-fpm-alpine as base
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN apk update && apk upgrade && apk add libpq-dev
+RUN docker-php-ext-install pgsql pdo pdo_pgsql && docker-php-ext-enable pdo_pgsql
+USER appuser
+
+FROM base as dev
+USER root
+RUN apk --no-cache add pcre-dev ${PHPIZE_DEPS} linux-headers \
+     && pecl install xdebug \
+     && docker-php-ext-enable xdebug \
+     && apk del pcre-dev ${PHPIZE_DEPS}
+USER appuser

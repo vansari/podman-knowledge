@@ -2,6 +2,7 @@
 
 PHP_VERSION ?= 8.2
 POSTGRES_PASSWORD ?= !ChangeMe!
+WEB_PORT ?= 8080
 
 # Build an FPM image for dev
 build-php-fpm:
@@ -50,6 +51,9 @@ start-pg: check-pod
 	--pod $(shell basename $(CURDIR)) \
 	-v pg-data:/var/lib/postgresql/data \
 	-e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
+	-e POSTGRES_USER=symfony \
+    -e POSTGRES_DB=public \
+    -e LANG=de_DE.utf8 \
 	-e POSTGRES_INITDB_ARGS='--locale-provider=icu --icu-locale=de-DE' \
     --env-file=$(CURDIR)/container/database/.env \
 	postgres:15-alpine3.18
@@ -60,14 +64,14 @@ stop-pg:
 rem-pg-data:
 	podman volume rm -f pg-data
 
-start: check-pod start-pg start-fpm start-nginx
+start: check-pod build start-pg start-fpm start-nginx
 
 stop: stop-fpm stop-nginx stop-pg stop-pod
 
 check-pod:
 	@if ! podman pod exists $(shell basename $(CURDIR)); then \
 		echo "Pod is not running. Starting the pod..."; \
-		podman pod create -p "8080:80" --name $(shell basename $(CURDIR)); \
+		podman pod create -p "${WEB_PORT}:80" --name $(shell basename $(CURDIR)); \
 	else \
 		echo "Pod $(shell basename $(CURDIR)) is already running."; \
 	fi
